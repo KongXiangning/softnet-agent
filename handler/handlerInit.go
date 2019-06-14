@@ -17,10 +17,14 @@ func HandlerInit() http.Handler {
 	mux.HandleFunc("/restart/",restart)
 	mux.HandleFunc("/sleep/",addProject)
 	mux.HandleFunc("/hello/",helloworld)
-	mux.HandleFunc("/init/postgres/",postgres)
-	mux.HandleFunc("/init/dns/",dns)
+	mux.HandleFunc("/init/postgres",postgres)
+	mux.HandleFunc("/init/postgres/erpone",postgres_erpone)
+	mux.HandleFunc("/init/postgres/erptwo",postgres_erptwo)
+	mux.HandleFunc("/init/dns",dns)
 	mux.HandleFunc("/init/zookeeper",zookeeper)
 	mux.HandleFunc("/init/redis",redis)
+	mux.HandleFunc("/init/mqnamesrv",mqNamesrv)
+	mux.HandleFunc("/init/mqbroker",mqBroker)
 	return mux
 }
 

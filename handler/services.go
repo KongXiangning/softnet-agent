@@ -3,10 +3,64 @@ package handler
 import (
 	"fmt"
 	"net/http"
+	"strconv"
 )
 
-func postgres(w http.ResponseWriter, r *http.Request)  {
+func postgres_erpone(w http.ResponseWriter,r *http.Request)  {
+	r.Form.Add("name","postgre_5432")
+	r.Form.Add("port","5432")
+	postgres(w,r)
+}
 
+func postgres_erptwo(w http.ResponseWriter,r *http.Request)  {
+	r.Form.Add("name","postgres_5433")
+	r.Form.Add("port","5433")
+	postgres(w,r)
+}
+
+func postgres(w http.ResponseWriter, r *http.Request)  {
+	var (
+		message string
+		commond string
+		err error
+		imageName string
+		name string
+		port int
+	)
+
+	name = r.FormValue("name")
+	if name == "" {
+		name = "postgres"
+	}
+	if r.FormValue("port") == "" {
+		port = 5432
+	}else {
+		if port,err = strconv.Atoi(r.FormValue("port"));err != nil{
+			goto ERROR
+		}
+	}
+	imageName = r.FormValue("image")
+	if imageName == "" {
+		imageName = "docker.scn.weilian.cn/library/postgres:9.6.3"
+	}
+
+	commond = fmt.Sprintf("docker run -d -e TZ=\"Asia/Shanghai\" -v /etc/localtime:/etc/localtime:ro -v /opt/docker/data/postgres/%s:/var/lib/postgresql/data  --net=host --restart always --name %s --privileged=true %s",name,name,imageName)
+	if message,err = execcmd(commond);err != nil {
+		goto ERROR
+	}else {
+		fmt.Fprintf(w,"dns run containid:%s \n",message)
+	}
+
+	if err = openPort(10909,"tcp");err != nil{
+		goto ERROR
+	}
+	if err = openPort(10911,"tcp");err != nil{
+		goto ERROR
+	}
+	fmt.Fprintf(w,"rocketmq-brokerr started")
+	return
+ERROR:
+	fmt.Fprintf(w,fmt.Sprint(err))
 }
 
 func dns(w http.ResponseWriter, r *http.Request)  {
@@ -64,10 +118,9 @@ func zookeeper(w http.ResponseWriter, r *http.Request)  {
 		message string
 		commond string
 		err error
-		imageName string
 	)
 
-	imageName = r.FormValue("image")
+	imageName := r.FormValue("image")
 	if imageName == "" {
 		imageName = "docker.scn.weilian.cn/library/zookeeper:v1"
 	}
@@ -110,6 +163,70 @@ func redis(w http.ResponseWriter, r *http.Request)  {
 		goto ERROR
 	}
 	fmt.Fprintf(w,"redis started")
+	return
+ERROR:
+	fmt.Fprintf(w,fmt.Sprint(err))
+}
+
+func mqNamesrv(w http.ResponseWriter, r *http.Request)  {
+	var (
+		message string
+		commond string
+		err error
+		imageName string
+	)
+
+	imageName = r.FormValue("image")
+	if imageName == "" {
+		imageName = "docker.scn.weilian.cn/library/rocketmq-namesrv:v1"
+	}
+	commond = fmt.Sprintf("docker run -d -e TZ=\"Asia/Shanghai\" -v /etc/localtime:/etc/localtime:ro -v /opt/docker/data/rocketmq/namesrv/store:/usr/local/rocketmq/store -v /opt/docker/data/rocketmq/namesrv/logs:/usr/local/rocketmq/logs --net=host --privileged=true --name rocketmq-namesrv %s",imageName)
+	if message,err = execcmd(commond);err != nil {
+		goto ERROR
+	}else {
+		fmt.Fprintf(w,"dns run containid:%s \n",message)
+	}
+
+	if err = openPort(9876,"tcp");err != nil{
+		goto ERROR
+	}
+	fmt.Fprintf(w,"rocketmq-namesrv started")
+	return
+ERROR:
+	fmt.Fprintf(w,fmt.Sprint(err))
+}
+
+func mqBroker(w http.ResponseWriter, r *http.Request)  {
+	var (
+		message string
+		commond string
+		err error
+		imageName string
+	)
+
+	ip := r.FormValue("ip")
+	imageName = r.FormValue("image")
+	if imageName == "" {
+		imageName = "docker.scn.weilian.cn/library/rocketmq-broker:v1"
+	}
+	commond = fmt.Sprintf("sed -i 's/{#ip}/%s/g' /opt/docker/data/rocketmq/broker/config/broker.properties",ip)
+	if message,err = execcmd(commond);err != nil{
+		goto ERROR
+	}
+	commond = fmt.Sprintf("docker run -d -e TZ=\"Asia/Shanghai\" -v /etc/localtime:/etc/localtime:ro -v /opt/docker/data/rocketmq/namesrv/store:/usr/local/rocketmq/store -v /opt/docker/data/rocketmq/namesrv/logs:/usr/local/rocketmq/logs --net=host --privileged=true --name rocketmq-namesrv %s",imageName)
+	if message,err = execcmd(commond);err != nil {
+		goto ERROR
+	}else {
+		fmt.Fprintf(w,"dns run containid:%s \n",message)
+	}
+
+	if err = openPort(10909,"tcp");err != nil{
+		goto ERROR
+	}
+	if err = openPort(10911,"tcp");err != nil{
+		goto ERROR
+	}
+	fmt.Fprintf(w,"rocketmq-brokerr started")
 	return
 ERROR:
 	fmt.Fprintf(w,fmt.Sprint(err))
