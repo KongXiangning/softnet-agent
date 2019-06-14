@@ -51,13 +51,10 @@ func postgres(w http.ResponseWriter, r *http.Request)  {
 		fmt.Fprintf(w,"dns run containid:%s \n",message)
 	}
 
-	if err = openPort(10909,"tcp");err != nil{
+	if err = openPort(port,"tcp");err != nil{
 		goto ERROR
 	}
-	if err = openPort(10911,"tcp");err != nil{
-		goto ERROR
-	}
-	fmt.Fprintf(w,"rocketmq-brokerr started")
+	fmt.Fprintf(w,"postgres started")
 	return
 ERROR:
 	fmt.Fprintf(w,fmt.Sprint(err))
